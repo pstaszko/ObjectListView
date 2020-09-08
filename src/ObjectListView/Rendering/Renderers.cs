@@ -998,29 +998,39 @@ namespace BrightIdeasSoftware {
         /// <param name="imageSelector">The value that indicates the image to be used</param>
         /// <returns>An Image or null</returns>
         protected virtual Image GetImage(Object imageSelector) {
-            if (imageSelector == null || imageSelector == DBNull.Value)
-                return null;
-
-            ImageList il = this.ImageListOrDefault;
-            if (il != null) {
-                if (imageSelector is Int32) {
-                    Int32 index = (Int32) imageSelector;
-                    if (index < 0 || index >= il.Images.Count)
-                        return null;
-
-                    return il.Images[index];
-                }
-
-                String str = imageSelector as String;
-                if (str != null) {
-                    if (il.Images.ContainsKey(str))
-                        return il.Images[str];
-
+            try
+            {
+                if (imageSelector == null || imageSelector == DBNull.Value)
                     return null;
-                }
-            }
 
-            return imageSelector as Image;
+                ImageList il = this.ImageListOrDefault;
+                if (il != null)
+                {
+                    if (imageSelector is Int32)
+                    {
+                        Int32 index = (Int32)imageSelector;
+                        if (index < 0 || index >= il.Images.Count)
+                            return null;
+
+                        return il.Images[index];
+                    }
+
+                    String str = imageSelector as String;
+                    if (str != null)
+                    {
+                        if (il.Images.ContainsKey(str))
+                            return il.Images[str];
+
+                        return null;
+                    }
+                }
+
+                return imageSelector as Image;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         /// <summary>

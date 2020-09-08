@@ -9151,41 +9151,49 @@ namespace BrightIdeasSoftware
         /// </summary>
         /// <param name="e"></param>
         protected override void OnDrawSubItem(DrawListViewSubItemEventArgs e) {
-            //System.Diagnostics.Debug.WriteLine(String.Format("OnDrawSubItem ({0}, {1})", e.ItemIndex, e.ColumnIndex));
-            // Don't try to do owner drawing at design time
-            if (this.DesignMode) {
-                e.DrawDefault = true;
-                return;
+            try
+            {
+                //System.Diagnostics.Debug.WriteLine(String.Format("OnDrawSubItem ({0}, {1})", e.ItemIndex, e.ColumnIndex));
+                // Don't try to do owner drawing at design time
+                if (this.DesignMode)
+                {
+                    e.DrawDefault = true;
+                    return;
+                }
+
+                object rowObject = ((OLVListItem)e.Item).RowObject;
+
+                // Calculate where the subitem should be drawn
+                Rectangle r = e.Bounds;
+
+                // Get the special renderer for this column. If there isn't one, use the default draw mechanism.
+                OLVColumn column = this.GetColumn(e.ColumnIndex);
+                IRenderer renderer = this.GetCellRenderer(rowObject, column);
+
+                // Get a graphics context for the renderer to use.
+                // But we have more complications. Virtual lists have a nasty habit of drawing column 0
+                // whenever there is any mouse move events over a row, and doing it in an un-double-buffered manner,
+                // which results in nasty flickers! There are also some unbuffered draw when a mouse is first
+                // hovered over column 0 of a normal row. So, to avoid all complications,
+                // we always manually double-buffer the drawing.
+                // Except with Mono, which doesn't seem to handle double buffering at all :-(
+                BufferedGraphics buffer = BufferedGraphicsManager.Current.Allocate(e.Graphics, r);
+                Graphics g = buffer.Graphics;
+
+                g.TextRenderingHint = ObjectListView.TextRenderingHint;
+                g.SmoothingMode = ObjectListView.SmoothingMode;
+
+                // Finally, give the renderer a chance to draw something
+                e.DrawDefault = !renderer.RenderSubItem(e, g, r, rowObject);
+
+                if (!e.DrawDefault)
+                    buffer.Render();
+                buffer.Dispose();
             }
+            catch 
+            {
 
-            object rowObject = ((OLVListItem)e.Item).RowObject;
-
-            // Calculate where the subitem should be drawn
-            Rectangle r = e.Bounds;
-
-            // Get the special renderer for this column. If there isn't one, use the default draw mechanism.
-            OLVColumn column = this.GetColumn(e.ColumnIndex);
-            IRenderer renderer = this.GetCellRenderer(rowObject, column);
-
-            // Get a graphics context for the renderer to use.
-            // But we have more complications. Virtual lists have a nasty habit of drawing column 0
-            // whenever there is any mouse move events over a row, and doing it in an un-double-buffered manner,
-            // which results in nasty flickers! There are also some unbuffered draw when a mouse is first
-            // hovered over column 0 of a normal row. So, to avoid all complications,
-            // we always manually double-buffer the drawing.
-            // Except with Mono, which doesn't seem to handle double buffering at all :-(
-            BufferedGraphics buffer = BufferedGraphicsManager.Current.Allocate(e.Graphics, r);
-            Graphics g = buffer.Graphics;
-
-            g.TextRenderingHint = ObjectListView.TextRenderingHint;
-            g.SmoothingMode = ObjectListView.SmoothingMode;
-
-            // Finally, give the renderer a chance to draw something
-            e.DrawDefault = !renderer.RenderSubItem(e, g, r, rowObject);
-
-            if (!e.DrawDefault)
-                buffer.Render();
-            buffer.Dispose();
+            }
         }
 
         #endregion
